@@ -3,12 +3,13 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package xtext.editor;
+package Compiler_project;
 
 /**
  *
  * @author Abokhadiga
  */
+import javax.swing.*;
 public class XtextEditor {
 
     /**
@@ -16,7 +17,15 @@ public class XtextEditor {
      */
     public static void main(String[] args) {
         // TODO code application logic here
-        Editor e = new Editor();
+        
+        SwingUtilities.invokeLater(new Runnable() {
+            public void run() {
+                //Turn off metal's use of bold fonts
+                UIManager.put("swing.boldMetal", Boolean.FALSE);
+                new TextAreaDemo().setVisible(false);
+            }
+            
+        });
         
     }
     

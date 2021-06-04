@@ -3,29 +3,41 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package xtext.editor;
+package Compiler_project;
 
+
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.util.Objects;
+import java.util.Scanner;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.UIManager;
+import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import javax.swing.plaf.metal.OceanTheme;
+import javax.swing.text.Element;
+import static Compiler_project.SCANNER.error;
 
 /**
  *
@@ -34,27 +46,17 @@ import javax.swing.plaf.metal.OceanTheme;
 
 public class Editor extends JFrame implements ActionListener {
     // Text component 
-	 public static JTextArea t;
-
+	 public JTextArea t;
+         public static JTextArea lines = new JTextArea("1");
+        
+         public File fi ;
 	// Frame 
 	JFrame f; 
-
 	// Constructor 
 	Editor() 
 	{ 
 		// Create a frame 
-		f = new JFrame("XTextEditor"); 
-
-		try { 
-			// Set metl look and feel 
-			UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel"); 
-
-			// Set theme to ocean 
-			MetalLookAndFeel.setCurrentTheme(new OceanTheme()); 
-		} 
-		catch (Exception e) { 
-		} 
-
+		f = new JFrame("Compiler Project"); 
 		// Text component 
 		t = new JTextArea(); 
 
@@ -104,22 +106,59 @@ public class Editor extends JFrame implements ActionListener {
 
 		mc.addActionListener(this); 
                 
-                JMenuItem mf = new JMenuItem("font"); 
-
-		mf.addActionListener(this);
+                
+                JMenuItem comment = new JMenuItem("Comment");
+                comment.addActionListener(this);
+                
+                JMenuItem Uncomment = new JMenuItem("Uncomment");
+                Uncomment.addActionListener(this);
+                
+                JMenuItem Scan = new JMenuItem("Scan");
+                Scan.addActionListener(this);
 
 		mb.add(m1); 
 		mb.add(m2);
-                mb.add(mf);
 		mb.add(mc);
-
-		f.setJMenuBar(mb); 
-		f.add(t); 
-		f.setSize(500, 500);
-                f.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-                f.setLocationRelativeTo(this);
-		f.setVisible(true);
+                mb.add(Scan);
+                mb.add(comment);
+                mb.add(Uncomment);
                 
+      // new 
+      JScrollPane jsp = new JScrollPane();
+      lines.setBackground(Color.LIGHT_GRAY);
+      lines.setEditable(false);
+      //  Code to implement line numbers inside the JTextArea
+      t.getDocument().addDocumentListener(new DocumentListener() {
+         public String getText() {
+            int caretPosition = t.getDocument().getLength();
+            Element root = t.getDocument().getDefaultRootElement();
+            String text = "1" + System.getProperty("line.separator"); // or using printWiter
+               for(int i = 2; i < root.getElementIndex(caretPosition) + 2; i++) {
+                  text += i + System.getProperty("line.separator");
+               }
+            return text;
+         }
+         @Override
+         public void changedUpdate(DocumentEvent de) {
+            lines.setText(getText());
+         }
+         @Override
+         public void insertUpdate(DocumentEvent de) {
+            lines.setText(getText());
+         }
+         @Override
+         public void removeUpdate(DocumentEvent de) {
+            lines.setText(getText());
+         }
+      });
+      jsp.getViewport().add(t);
+      jsp.setRowHeaderView(lines);
+      f.setJMenuBar(mb); 
+      f.setSize(800, 800);
+      f.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+      f.setLocationRelativeTo(this);
+      f.setVisible(true);
+      f.add(jsp);
 	} 
 
 	// If a button is pressed 
@@ -151,11 +190,16 @@ public class Editor extends JFrame implements ActionListener {
 		else if (s.equals("close")) { 
                     Close();
 		}
-                else if (s.equals("font")) { 
-                    font fs = new font();
-                    
-                    
-		}
+                else if(s.equals("Comment")){
+                    Comment();
+                }
+                else if(s.equals("Uncomment")){
+                    Uncommect();
+                }
+                else if(s.equals("Scan")){
+                    Save();
+                    Scan();
+                }
 	} 
 
     public void Cut(){
@@ -176,7 +220,7 @@ public class Editor extends JFrame implements ActionListener {
 	if (r == JFileChooser.APPROVE_OPTION) { 
 
 	// Set the label to the path of the selected directory 
-            File fi = new File(j.getSelectedFile().getAbsolutePath()); 
+             this.fi = new File(j.getSelectedFile().getAbsolutePath()); 
 
             try { 
 		// Create a file writer 
@@ -221,7 +265,7 @@ public class Editor extends JFrame implements ActionListener {
 	// If the user selects a file 
 	if (r == JFileChooser.APPROVE_OPTION) { 
             // Set the label to the path of the selected directory 
-            File fi = new File(j.getSelectedFile().getAbsolutePath()); 
+            this.fi = new File(j.getSelectedFile().getAbsolutePath()); 
 
             try { 
 		// String 
@@ -259,4 +303,64 @@ public class Editor extends JFrame implements ActionListener {
     public void Close(){
         System.exit(0);
     }
+    
+    public void Comment()
+    {
+        if (t.getSelectedText() != null) 
+        { // See if they selected something 
+            String s = t.getSelectedText();
+            
+            String fin = "/@\n" + s + "\n@/";
+            t.replaceSelection(fin);
+        }
+    }
+    
+    public void Uncommect(){
+        String s = t.getSelectedText();
+        String fin = s.substring(3,s.length()-3);
+        String start,End ; 
+        start = s.substring(0,2);
+        End =s.substring(s.length()-2,s.length());
+        
+        if(Objects.equals(start,"/@") && !Objects.equals(End, "@/")){
+            String fin2 = s.substring(2);
+            fin2 += "\n/@";
+            t.replaceSelection(fin2);
+        }
+        else if(!Objects.equals(start,"/@") && Objects.equals(End, "@/") ){
+            String fin2 ="@/\n" + s.substring(0,s.length()-2);
+            t.replaceSelection(fin2);
+            
+        }
+        else if(!Objects.equals(start,"/@") && !Objects.equals(End, "@/")){
+            String fin2= "@/\n" + s + "\n/@";
+            t.replaceSelection(fin2);
+        }
+        else{
+            t.replaceSelection(fin);
+        }
+        
+        
+    }
+    
+    public void Scan()
+    {
+        try 
+            {
+                Scanner s = new Scanner(this.fi);
+                String source = " ";
+                while (s.hasNext()) 
+                {
+                    source += s.nextLine() + "\n";
+                }
+                SCANNER l = new SCANNER(source);
+                l.printTokens();
+            } 
+            catch(FileNotFoundException e) 
+            {
+                error(-1, -1, "Exception: " + e.getMessage(), "not match");
+            }
+    }
+    
 }
+
